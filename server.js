@@ -8,7 +8,7 @@ const file = require('./file');
 app.use(express.static('./images'));
 const port = 3000;
 
-const mainURL = "https://manamoa47.net/";
+const mainURL = "https://manamoa50.net/";
 
 const data = new mongoose.Schema({
     title : String,
@@ -46,6 +46,8 @@ app.post('/post/search', (req, res) => { //검색. 검색할 때마다 결과 �
         await result.forEach((element, index) => {
             element.title = changeText(element.title);
             element.artist = changeText(element.artist);
+            console.log(typeof(element.title))
+
 
             DATA.findOne({title : element.title, artist : element.artist}, (err, data) => {
                 if(err) {
@@ -87,14 +89,16 @@ app.post('/post/episodes', (req, res) => {
         var title = req.body.title; //특수문자 변환된 상태
         var artist = req.body.artist;
 
-        let result = await manamoa.getEpisodes(mainURL, subURL);
+        let result = await manamoa.getEpisodes(mainURL, subURL); //문제없
         var episodesArray = [];
 
         let data = await DATA.findOne({title : title, artist : artist});
+        console.log(data);
+        var only_count = 0; //한 번만 보내도록 해주는 변수
 
         await result.forEach((element, index) => {
             //db에 제목 정도는 저장되어 있음.
-            if(index < result.length - 1) {
+            if(index < result.length - 1) { //데이터 개수가 더 적어서 단순 인덱스로 하면 안 됨
                 var episodes = new Object();
                 element.eptitle = changeText(element.eptitle);
                 title = changeText(title);
@@ -105,13 +109,15 @@ app.post('/post/episodes', (req, res) => {
                 }
     
                 var tmp = true;
-    
-                data.episodes.forEach((data2) => {
-                    if(data2.code == element.code) {
-                        tmp = false; //이미 존재하는 에피소드
-                    }
-                });
-    
+
+                // data.episodes.forEach((data2) => {
+                //     if(data2.code == element.code) {
+                //         tmp = false; //이미 존재하는 에피소드
+                //     }
+                // });
+                if(index <= data.episodes.length - 1)
+                    tmp = false;
+
                 if(tmp) {
                     episodes.eptitle = element.eptitle;
                     episodes.code = element.code;
@@ -149,6 +155,7 @@ app.post('/post/episodes', (req, res) => {
                 }
                 tmp.info = element;
                 res.json(tmp);
+                only_count += 1;
             }
             
         }); 
@@ -210,9 +217,9 @@ app.post('/post/contents', (req, res) => { //업데이트로 들어온 건 무�
                     json.contents = contentsLink;
                     json.eplink = data.link;
                     json.titleImage = imageLink;
-                    res.json(json);
 
                     setContentsData(DATA, title, artist, eptitle, contentsLink);
+                    res.json(json);
                 }
                 else { //컨텐츠 o
                     var tmp = new Object();
@@ -385,6 +392,7 @@ function setEpisodesData(episodesArray, DATA, body) {
         }
         else {
             console.log("updated!");
+            console.log(episodesArray);
         }
     });
 }
@@ -767,7 +775,9 @@ async function updateUpdatedData(element, DATA, updateimageLink, dir2, updateCod
                                             }
                                         });
                                         var tmp3 = [];
-                                        tmp3 = data3.updateCode;
+                                        if(typeof(data3.updateCode) == Array) {
+                                            tmp3 = data3.updateCode;
+                                        }
                                         tmp3.push(updateCode);
 
                                         await DATA.updateOne({title : element.title, artist : element.artist}, {updateCode : tmp3, episodes : tmp}, async (err4) => {
@@ -913,14 +923,21 @@ async function deleteDB(DATA) {
     //     }
         
     // })
-    DATA.deleteOne({artist : "유키모리 네네"}, (err, output) => {
-        if(err) {
-            console.log(err);
-        }
-        else {
-            console.log("deleted");
-        }
-    });
+    // DATA.deleteOne({title : "선배가 짜증나는 후배 이야기"}, (err, output) => {
+    //     if(err) {
+    //         console.log(err);
+    //     }
+    //     else {
+    //         console.log("deleted");
+    //     }
+    // });
+
+    // DATA.deleteMany({}, (err, out) => {
+    //     console.log("gg");
+    // });
+    DATA.find({bookmark : true}, (err, out) => {
+        console.log(out);
+    })
 
 }
 
